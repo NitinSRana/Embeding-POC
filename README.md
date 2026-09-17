@@ -1,0 +1,35 @@
+# DeepVue Embed POC
+
+Throwaway proof of concept for the iframe and direct-link embed. Scope: `DeepVue_Embed_POC_Scoped.docx`.
+
+## Run locally
+
+```
+npm install
+npm run keys > .env.local    # once: ES256 key pair + ACCESS_CODE=deepvue
+npm run dev                  # http://localhost:3000 (any username, password = ACCESS_CODE)
+npm run check                # token checks: valid / expired / tampered
+npm run smoke -- [baseUrl]   # 30 HTTP end-to-end checks (creates "Smoke test" tours)
+```
+
+Stand-in third-party portal on a different origin:
+
+```
+npm run host -- "http://localhost:3000/t/<token>"   # http://localhost:4000/listing, /strict-csp, /no-referrer
+```
+
+Reset local data: delete `.pglite/` and `public/uploads/`.
+
+## Pages
+
+- `/`: upload form and list of tours
+- `/tours/<id>`: iframe and link snippets, Expire now / Renew, analytics
+- `/t/<token>`: public viewer (gallery, expired panel or invalid-link panel)
+- `POST /api/e`: beacon collection endpoint
+
+## Going to the cloud
+
+- `DATABASE_URL` → managed Postgres (tables are created on first query).
+- `PUBLIC_BASE_URL` → the deployed origin, e.g. `https://poc.deepvue.app`.
+- S3/CloudFront: implement the S3 branch in `lib/storage.ts`. On Vercel, switch uploads to presigned PUTs, because function request bodies are capped at 4.5 MB.
+- Real portals can't reach localhost. Deploy, or tunnel with `cloudflared tunnel --url http://localhost:3000`.
