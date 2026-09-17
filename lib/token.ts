@@ -1,7 +1,7 @@
 import { SignJWT, jwtVerify, importPKCS8, importSPKI } from 'jose'
 
-// Keys pasted into a hosting dashboard often keep "\n" as two literal characters.
-const pem = (v = '') => v.replace(/\\n/g, '\n')
+// Keys pasted into a hosting dashboard often keep "\n" as two literal characters and the surrounding quotes.
+const pem = (v = '') => v.trim().replace(/^"|"$/g, '').replace(/\\n/g, '\n')
 const priv = () => importPKCS8(pem(process.env.JWT_PRIVATE_KEY), 'ES256')
 const pub = () => importSPKI(pem(process.env.JWT_PUBLIC_KEY), 'ES256')
 

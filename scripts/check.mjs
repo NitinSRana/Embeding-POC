@@ -18,5 +18,7 @@ assert.equal(await verify('garbage'), null, 'malformed')
 // Keys pasted into a dashboard with literal "\n" instead of line breaks still work.
 for (const k of ['JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY']) process.env[k] = process.env[k].replace(/\n/g, '\\n')
 assert.equal(await verify(await sign(tid)), tid, 'keys with literal \\n')
+for (const k of ['JWT_PRIVATE_KEY', 'JWT_PUBLIC_KEY']) process.env[k] = ` "${process.env[k]}" `
+assert.equal(await verify(await sign(tid)), tid, 'keys pasted with surrounding quotes')
 
 console.log('token checks passed')
