@@ -5,6 +5,8 @@ const config: NextConfig = {
   devIndicators: false, // keep the dev badge out of framed demos
   // proxy.ts buffers request bodies; the 10 MB default truncates multi-photo uploads. Matches MAX_BYTES in api/tours.
   experimental: { proxyClientMaxBodySize: '50mb' },
+  // PGlite (25 MB) is only for local dev; keep it out of Vercel function bundles.
+  outputFileTracingExcludes: process.env.VERCEL ? { '*': ['node_modules/@electric-sql/pglite/**'] } : undefined,
   async headers() {
     return [
       // Any site may frame the viewer; that's the product.

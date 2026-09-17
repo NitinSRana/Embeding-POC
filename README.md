@@ -9,7 +9,7 @@ npm install
 npm run keys > .env.local    # once: ES256 key pair + ACCESS_CODE=deepvue
 npm run dev                  # http://localhost:3000 (any username, password = ACCESS_CODE)
 npm run check                # token checks: valid / expired / tampered
-npm run smoke -- [baseUrl]   # 30 HTTP end-to-end checks (creates "Smoke test" tours)
+npm run smoke -- [baseUrl]   # ~37 HTTP end-to-end checks; set ACCESS_CODE=... if the site has one; cleans up after itself
 ```
 
 Stand-in third-party portal on a different origin:
@@ -26,6 +26,8 @@ Reset local data: delete `.pglite/` and `public/uploads/`.
 - `/tours/<id>`: iframe and link snippets, Expire now / Renew, analytics
 - `/t/<token>`: public viewer (gallery, expired panel or invalid-link panel)
 - `POST /api/e`: beacon collection endpoint
+- `POST /api/uploads`: short-lived Vercel Blob upload tokens (deployed)
+- `DELETE /api/tours/<id>`: delete a tour, its analytics and photos
 
 ## Going to the cloud
 

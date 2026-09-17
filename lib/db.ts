@@ -1,5 +1,4 @@
 import { Pool } from 'pg'
-import { PGlite } from '@electric-sql/pglite'
 
 const SCHEMA = `
 create table if not exists tours (
@@ -30,17 +29,23 @@ const g = globalThis as unknown as { db?: Promise<Q> }
 
 async function connect(): Promise<Q> {
   if (process.env.DATABASE_URL) {
-    const pool = new Pool({ connectionString: process.env.DATABASE_URL })
-    await pool.query(SCHEMA)
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL, max: 5 })
+    try {
+      await pool.query(SCHEMA)
+    } catch (e: any) {
+      // Two cold starts creating the schema at once can collide; the other one already made it.
+      if (!['23505', '42P07', '42701'].includes(e?.code)) throw e
+    }
     return (sql, params) => pool.query(sql, params)
   }
   // ponytail: embedded single-process Postgres for local dev; set DATABASE_URL for anything shared
+  const { PGlite } = await import('@electric-sql/pglite') // loaded only locally, never on Vercel
   const lite = new PGlite('.pglite')
   await lite.exec(SCHEMA)
   return (sql, params) => lite.query(sql, params)
 }
 
 export async function query(sql: string, params?: unknown[]) {
-  g.db ??= connect()
+  g.db ??= connect().catch((e) => { g.db = undefined; throw e }) // retry on next request if the DB was unreachable
   return (await g.db)(sql, params).then((r) => r.rows)
 }

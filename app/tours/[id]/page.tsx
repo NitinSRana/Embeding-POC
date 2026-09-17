@@ -6,6 +6,7 @@ import { sign } from '@/lib/token'
 import Shell from '../../Shell'
 import CopyButton from './CopyButton'
 import AutoRefresh from './AutoRefresh'
+import DeleteTour from './DeleteTour'
 
 export const dynamic = 'force-dynamic'
 
@@ -107,10 +108,13 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
           </div>
           <p className="sub">{tour.photos.length} {tour.photos.length === 1 ? 'photo' : 'photos'} · created {fmtDate(new Date(tour.created_at))}</p>
         </div>
+        <div className="btn-row">
+        <DeleteTour id={id} title={tour.title} />
         <a className="btn btn-secondary" href={link} target="_blank">
           Open tour
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" /></svg>
         </a>
+        </div>
       </div>
 
       <div className="grid-2">

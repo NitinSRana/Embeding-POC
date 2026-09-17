@@ -1,3 +1,5 @@
+import { cache } from 'react'
+import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { query } from '@/lib/db'
 import { verify } from '@/lib/token'
@@ -5,7 +7,30 @@ import Beacon from './Beacon'
 import Gallery from './Gallery'
 
 export const dynamic = 'force-dynamic'
-export const metadata = { title: 'Virtual tour', robots: 'noindex' }
+
+// Shared by generateMetadata and the page within one request.
+const getTour = cache(async (token: string) => {
+  const tid = await verify(token)
+  const [tour] = tid ? await query('select title, description, photos, expires_at from tours where id = $1', [tid]) : []
+  return tour ?? null
+})
+
+// Link-preview card for LinkedIn, WhatsApp, Slack etc. Expired or invalid tours get a generic card.
+export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
+  const tour = await getTour((await params).token)
+  const generic: Metadata = { title: 'Virtual tour', robots: 'noindex', openGraph: { title: 'Virtual tour', siteName: 'DeepVue' } }
+  if (!tour || new Date(tour.expires_at) <= new Date()) return generic
+  const title = `${tour.title} · Virtual tour`
+  const description = (tour.description || `${tour.photos.length}-photo virtual tour hosted by DeepVue`).slice(0, 200)
+  const image = new URL(tour.photos[0], process.env.PUBLIC_BASE_URL).toString()
+  return {
+    title,
+    description,
+    robots: 'noindex',
+    openGraph: { type: 'website', siteName: 'DeepVue', title, description, images: [{ url: image }] },
+    twitter: { card: 'summary_large_image', title, description, images: [image] },
+  }
+}
 
 const Lock = () => (
   <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></svg>
@@ -18,8 +43,7 @@ export default async function Viewer({ params, searchParams }: {
 }) {
   const { token } = await params
   const preview = (await searchParams).preview === '1' // admin preview: don't count it
-  const tid = await verify(token)
-  const [tour] = tid ? await query('select title, photos, expires_at from tours where id = $1', [tid]) : []
+  const tour = await getTour(token)
 
   if (!tour) {
     return (

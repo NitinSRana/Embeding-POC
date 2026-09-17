@@ -1,7 +1,9 @@
 import { SignJWT, jwtVerify, importPKCS8, importSPKI } from 'jose'
 
-const priv = () => importPKCS8(process.env.JWT_PRIVATE_KEY!, 'ES256')
-const pub = () => importSPKI(process.env.JWT_PUBLIC_KEY!, 'ES256')
+// Keys pasted into a hosting dashboard often keep "\n" as two literal characters.
+const pem = (v = '') => v.replace(/\\n/g, '\n')
+const priv = () => importPKCS8(pem(process.env.JWT_PRIVATE_KEY), 'ES256')
+const pub = () => importSPKI(pem(process.env.JWT_PUBLIC_KEY), 'ES256')
 
 export async function sign(tourId: string, ttl: string | number = '365d') {
   return new SignJWT({ tid: tourId }).setProtectedHeader({ alg: 'ES256' }).setExpirationTime(ttl).sign(await priv())

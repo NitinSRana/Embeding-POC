@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { query } from '@/lib/db'
+import { blobEnabled } from '@/lib/storage'
 import Shell from './Shell'
 import UploadForm from './UploadForm'
 
@@ -24,7 +25,7 @@ export default async function Home() {
             <li><span className="step-n">3</span><span><b>Measure</b>Views and source portal, live</span></li>
           </ol>
           <div className="card">
-            <UploadForm />
+            <UploadForm blob={blobEnabled} />
           </div>
         </section>
 

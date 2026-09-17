@@ -26,18 +26,19 @@ Owner key: **You** = needs your accounts, payment or DNS · **Claude** = code ch
 
 | # | Task | Why | Done when |
 |---|------|-----|-----------|
-| 2.1 | **Upload photos straight to Vercel Blob** | Vercel rejects requests over 4.5 MB, so photos can't go through the app. New flow (Vercel Blob client uploads): the browser gets a short-lived upload token from the app (access code required, only JPG/PNG/WebP/GIF/AVIF, per-file size limit), uploads each photo to Blob, then sends only the photo URLs to `/api/tours`. The app only accepts URLs from its own Blob store. | A 20 MB, 5-photo tour uploads on the deployed site |
-| 2.2 | Keep local dev working | Use Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set, and fall back to the current local-disk upload otherwise. | Local smoke test still passes |
-| 2.3 | Load the embedded database only locally | Import PGlite only when `DATABASE_URL` isn't set, so it isn't bundled into the Vercel app. | `next build` output has no PGlite in the server bundles |
-| 2.4 | Fix how keys are read on Vercel | Vercel stores `\n` in a pasted key literally, which breaks JWT key import. Convert `\\n` back to newlines in `lib/token.ts`. | The token check passes with keys pasted into Vercel |
-| 2.5 | Photo response headers | Blob serves public files with their own headers; confirm the content type is correct and that only raster images were accepted (2.1). | Header check in 4.8 |
-| 2.6 | Turn the access code back on | Admin pages, upload and Expire/Renew require the code. Viewer, beacon and info address stay public. | Visiting `/` without the code returns 401 |
-| 2.7 | Lower the proxy body limit | After 2.1 no large bodies pass through the app, so set the 50 MB setting back to about 1 MB. | Config updated |
-| 2.8 | Link previews for LinkedIn and chat apps | Add `og:title`, `og:description` and `og:image` (the cover photo from the CDN) to the viewer, and make expired tours show a generic card. | LinkedIn Post Inspector shows title and photo |
-| 2.9 | Update the smoke test for production | Send the access code, use the new Blob upload flow, and add a `--cleanup` option that deletes its "Smoke test" tours, events and Blob files. | `npm run smoke -- <url>` passes and leaves no test data |
-| 2.10 | Generate production signing keys | Run `npm run keys` again for production and never reuse the local keys. Private key goes into Vercel only. | New key pair ready for 3.3 |
-| 2.11 | Repo hygiene | Confirm `.env*.local`, `.pglite/` and `public/uploads/` are git-ignored. Remove Next's generated `AGENTS.md`/`CLAUDE.md` if you don't want them. Run `git init` and make the first commit. | `git status` shows no secrets or local data |
-| 2.12 | Local run-through | `npm run check`, `npm run smoke` and `next build` all pass locally before pushing. | All green |
+| 2.1 | Upload photos straight to Vercel Blob | Browser gets a short-lived token from `/api/uploads` (access code required, JPG/PNG/WebP/GIF/AVIF only, 25 MB per photo), uploads to Blob, then `/api/tours` accepts only URLs that exist in **this** store. | Done |
+| 2.2 | Keep local dev working | Blob when `BLOB_READ_WRITE_TOKEN` is set, local disk otherwise. | Done |
+| 2.3 | Keep the embedded database out of Vercel | PGlite loaded only without `DATABASE_URL` and excluded from Vercel bundles; schema creation tolerates simultaneous cold starts. | Done |
+| 2.4 | Keys pasted into Vercel | `
+` typed as two characters is converted back to line breaks (covered by `npm run check`). | Done |
+| 2.5 | Photo content types | Only raster types can be uploaded (enforced by the Blob token and re-checked on the server). | Done |
+| 2.6 | Access code | Required on admin pages and upload/delete APIs. **On Vercel a missing `ACCESS_CODE` returns 503 instead of opening the admin.** | Done |
+| 2.7 | Proxy body limit | Kept at 50 MB for local multipart uploads; on Vercel photos bypass the app, so it no longer matters there. | Done |
+| 2.8 | Link previews | `og:title`, `og:description`, `og:image` (cover photo) on live tours; generic card for expired or invalid ones. | Done |
+| 2.9 | Smoke test for production | Sends `ACCESS_CODE`, detects Blob mode, tests direct-to-Blob upload (12 MB) and the SVG block, and deletes its test tours at the end (`--keep` to skip). | Done |
+| 2.10 | Delete tour | New **Delete tour** button and `DELETE /api/tours/<id>`: removes the tour, analytics and photos. | Done |
+| 2.11 | Generate production signing keys | Run `npm run keys` and copy `JWT_PRIVATE_KEY` and `JWT_PUBLIC_KEY` into Vercel (never reuse local keys, never commit them). | **You**, at step 3.3 |
+| 2.12 | Local run-through | `npm run check`, `npm run smoke` (37/37 open, 39/39 with access code), `next build`. **Not yet run: the Blob upload path**, which needs the Blob token; it gets tested in 4.1. | Done |
 
 ---
 
@@ -47,7 +48,7 @@ Owner key: **You** = needs your accounts, payment or DNS · **Claude** = code ch
 |---|------|-------|-------|
 | 3.1 | Push code | Claude, then You | Claude commits. You add the GitHub remote, or give Claude the repo URL and approve the push. |
 | 3.2 | Import project and connect storage | You | Vercel → Add New → Project → pick the repo. Framework: Next.js (auto-detected). Then Project → Settings → Functions → set region 1.1. Project → Storage → connect `deepvue-poc-db` and `deepvue-poc-media`. |
-| 3.3 | Environment variables (Production) | You | Added automatically by connecting the stores: `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`. Add these yourself: `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY`, `ACCESS_CODE`, `PUBLIC_BASE_URL`. |
+| 3.3 | Environment variables (Production) | You | Added by connecting the stores: `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`. **If the Blob connection only adds `BLOB_STORE_ID`, copy the read-write token from the Blob store's settings into `BLOB_READ_WRITE_TOKEN`.** Add yourself: `JWT_PRIVATE_KEY`, `JWT_PUBLIC_KEY` (from `npm run keys`), `ACCESS_CODE`, `PUBLIC_BASE_URL`. |
 | 3.4 | First deploy | You | Click Deploy. Copy the URL (`https://<project>.vercel.app`), set it as `PUBLIC_BASE_URL`, then Redeploy. **Embed codes contain this URL, so set it before creating real tours.** |
 | 3.5 | Custom domain (optional) | You | Vercel → Project → Domains → add `poc.deepvue.app` → create the DNS record it shows. Then update `PUBLIC_BASE_URL` and redeploy. |
 
@@ -57,7 +58,7 @@ Owner key: **You** = needs your accounts, payment or DNS · **Claude** = code ch
 
 | # | Check | How |
 |---|-------|-----|
-| 4.1 | Automated end-to-end | `ACCESS_CODE=… npm run smoke -- https://<url> --cleanup` → all pass, test data removed |
+| 4.1 | Automated end-to-end | `ACCESS_CODE=… npm run smoke -- https://<url>` → all pass; its test tours are deleted automatically |
 | 4.2 | Login | Admin pages prompt for the code. Viewer links open without it. |
 | 4.3 | Real upload | Create a tour with 5+ real phone photos (20 MB+) and check they load from `*.public.blob.vercel-storage.com` |
 | 4.4 | Embed on a third-party origin | Run the local demo portal (`npm run host`), paste the **live** iframe code and confirm it renders, counts views and shows the referring site |
@@ -65,7 +66,7 @@ Owner key: **You** = needs your accounts, payment or DNS · **Claude** = code ch
 | 4.6 | Mobile | Open the direct link on a real phone (iOS Safari and Android Chrome): swipe, fullscreen, view counted as Mobile |
 | 4.7 | Link preview | Check the direct link in LinkedIn Post Inspector (linkedin.com/post-inspector) without posting |
 | 4.8 | Security headers | Viewer: `frame-ancestors *`. Admin: `frame-ancestors 'self'`. Photos: correct image content type. |
-| 4.9 | Clean slate for the client | Delete test tours and create the demo tour you'll present |
+| 4.9 | Clean slate for the client | Use **Delete tour** on test tours and create the demo tour you'll present |
 
 ---
 
