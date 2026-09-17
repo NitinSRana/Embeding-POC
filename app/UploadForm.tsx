@@ -56,10 +56,11 @@ export default function UploadForm({ blob }: { blob: boolean }) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ title: form.get('title'), description: form.get('description'), photos }),
       })
-      if (!r.ok) throw new Error(await r.text())
+      if (!r.ok) throw new Error(`saving the tour (HTTP ${r.status}) ${await r.text()}`.trim())
       window.location.href = `/tours/${(await r.json()).id}`
     } catch (err) {
-      setError(`Upload failed: ${(err as Error).message}`)
+      const e = err as Error
+      setError(`Upload failed: ${e.message || e.name || 'unknown error'}`)
       setBusy(false)
       setProgress(0)
     }

@@ -17,6 +17,15 @@ async function createTour(title: string, description: string, photos: string[]) 
 const clean = (v: unknown, n: number) => String(v ?? '').trim().slice(0, n)
 
 export async function POST(req: Request) {
+  try {
+    return await handle(req)
+  } catch (e) {
+    console.error('create tour failed', e)
+    return new Response(`Could not create the tour: ${(e as Error).message}`, { status: 500 })
+  }
+}
+
+async function handle(req: Request) {
   // Deployed flow: photos already uploaded to Vercel Blob by the browser; we receive their URLs.
   if (req.headers.get('content-type')?.includes('application/json')) {
     let body: any

@@ -1,5 +1,6 @@
 import { list } from '@vercel/blob'
 import { query } from '@/lib/db'
+import { sign, verify } from '@/lib/token'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,16 @@ export async function GET() {
 
   let database = 'not configured'
   if (process.env.DATABASE_URL) {
-    try { await query('select 1'); database = 'ok' } catch { database = 'error' }
+    try { await query('select count(*) from tours'); database = 'ok' } catch (e) { database = `error: ${(e as Error).message}`.slice(0, 200) }
+  }
+
+  // Sign and verify a throwaway token: proves both JWT keys parse and belong together.
+  let jwt = 'error'
+  try {
+    const id = crypto.randomUUID()
+    jwt = (await verify(await sign(id))) === id ? 'ok' : 'error: keys do not match each other'
+  } catch (e) {
+    jwt = `error: ${(e as Error).name}: ${(e as Error).message}`.slice(0, 200)
   }
 
   const rw = process.env.BLOB_READ_WRITE_TOKEN?.trim()
@@ -26,6 +36,7 @@ export async function GET() {
   return Response.json({
     env,
     database,
+    jwt,
     blob,
     blobTokenLooksValid: !!rw && rw.startsWith('vercel_blob_rw_') && !/["'\s]/.test(rw),
     blobTokenMatchesConnectedStore: connectedStore ? rwStore === connectedStore : null,
