@@ -16,6 +16,18 @@ const host = (url: string | null) => {
 const fmtDate = (d: Date) => d.toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
 const UNKNOWN = 'Direct / unknown'
 
+// Platforms' own branded short-link domains, so e.g. "lnkd.in" reads as "LinkedIn (lnkd.in)"
+// rather than an unrecognisable string. Not exhaustive — extend as new referrers show up.
+const KNOWN_PLATFORMS: Record<string, string> = {
+  'lnkd.in': 'LinkedIn', 'linkedin.com': 'LinkedIn',
+  'l.instagram.com': 'Instagram', 'instagram.com': 'Instagram',
+  'fb.me': 'Facebook', 'facebook.com': 'Facebook', 'm.facebook.com': 'Facebook',
+  't.co': 'X / Twitter', 'x.com': 'X / Twitter', 'twitter.com': 'X / Twitter',
+  'wa.me': 'WhatsApp', 'whatsapp.com': 'WhatsApp',
+  'bit.ly': 'Bitly link', 'tinyurl.com': 'TinyURL link',
+}
+const platformLabel = (domain: string) => KNOWN_PLATFORMS[domain] ? `${KNOWN_PLATFORMS[domain]} (${domain})` : domain
+
 function tally(values: (string | null)[]) {
   const m = new Map<string, number>()
   for (const v of values) m.set(v ?? UNKNOWN, (m.get(v ?? UNKNOWN) ?? 0) + 1)
@@ -94,6 +106,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
   const unique = new Set(views.map((e) => e.session_id)).size
   // Referrer as the viewer saw it (document.referrer), falling back to the Referer header on the viewer request.
   const refDomain = (e: any) => host(e.referrer) ?? host(e.referer_header)
+  const refLabel = (e: any) => { const d = refDomain(e); return d ? platformLabel(d) : null }
   const tl = timeline(views.map((e) => new Date(e.created_at).getTime()))
   const tlMax = Math.max(1, ...tl.buckets.map((b) => b.count))
 
@@ -205,7 +218,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
         <div className="grid-half">
           <div className="card">
             <div className="card-head"><div><h2>Views by referring site</h2><p>Which portal each view came from</p></div></div>
-            <BarList rows={tally(views.map(refDomain))} total={views.length} />
+            <BarList rows={tally(views.map(refLabel))} total={views.length} />
           </div>
           <div className="card">
             <div className="card-head"><div><h2>Views by device</h2><p>Mobile and desktop share</p></div></div>
@@ -229,7 +242,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
                       <tr key={e.id}>
                         <td className="nowrap">{new Date(e.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
                         <td><span className={`pill ${cls}`}>{label}</span></td>
-                        <td className="nowrap">{refDomain(e) ?? <span className="muted">{UNKNOWN}</span>}</td>
+                        <td className="nowrap">{refLabel(e) ?? <span className="muted">{UNKNOWN}</span>}</td>
                         <td>{e.device === 'mobile' ? 'Mobile' : 'Desktop'}</td>
                         <td className="nowrap muted">{e.session_id?.slice(0, 8)}</td>
                         <td className="clip muted" title={ref ?? ''}>{ref ?? '-'}</td>
