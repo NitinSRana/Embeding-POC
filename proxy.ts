@@ -17,5 +17,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!t/|api/e|api/health|_next/|uploads/|favicon.ico).*)'],
+  matcher: ['/((?!t/|api/e|api/oembed|api/health|_next/|uploads/|favicon.ico).*)'],
 }
