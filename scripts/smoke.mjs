@@ -112,6 +112,13 @@ try {
   check('Tour page escapes HTML in the title', !tourHtml.includes('<img src=x onerror') && tourHtml.includes('&lt;img src=x onerror'))
   const adminCsp = (await admin(`/tours/${up.id}`)).headers.get('content-security-policy') ?? ''
   check('Admin pages cannot be framed by other sites', adminCsp.includes("frame-ancestors 'self'"), adminCsp || 'no CSP header')
+  check('Tour page shows the JS widget snippet with the right token and script src', tourHtml.includes('deepvue-tour') && tourHtml.includes(link) && tourHtml.includes(`${BASE}/widget.js`))
+
+  // ---- Widget script (public: no access code, correct for a <script src> load)
+  const widgetJs = await get('/widget.js')
+  const widgetJsBody = await widgetJs.text()
+  check('Widget script is public and served as JS', widgetJs.status === 200 && (widgetJs.headers.get('content-type') ?? '').includes('javascript'), widgetJs.headers.get('content-type'))
+  check('Widget script mounts .deepvue-tour elements via data-src', widgetJsBody.includes('deepvue-tour') && widgetJsBody.includes('data-src'))
 
   // ---- Viewer & token states (public: no access code)
   const token = link.split('/t/')[1]

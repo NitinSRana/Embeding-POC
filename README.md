@@ -23,9 +23,11 @@ Reset local data: delete `.pglite/` and `public/uploads/`.
 ## Pages
 
 - `/`: upload form and list of tours
-- `/tours/<id>`: iframe and link snippets, Expire now / Renew, analytics
+- `/tours/<id>`: iframe, direct link and JS widget snippets, Expire now / Renew, analytics
 - `/t/<token>`: public viewer (gallery, expired panel or invalid-link panel)
+- `/widget.js`: JS widget loader — lazy-mounts `.deepvue-tour[data-src]` embeds on scroll, falls back to a plain link if JS never runs
 - `POST /api/e`: beacon collection endpoint
+- `GET /api/oembed`: oEmbed endpoint so WordPress-style platforms can auto-embed a bare pasted link past a filter that would otherwise strip a manually typed `<iframe>`
 - `POST /api/uploads`: short-lived Vercel Blob upload tokens (deployed)
 - `DELETE /api/tours/<id>`: delete a tour, its analytics and photos
 

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Shared access code as HTTP Basic Auth (any username). The viewer, beacon and assets stay public.
+// Shared access code as HTTP Basic Auth (any username). The viewer, beacon, oEmbed, widget
+// script and assets stay public — third-party pages load these unauthenticated.
 export function proxy(req: NextRequest) {
   if (!process.env.ACCESS_CODE) {
     // Fail closed when deployed: a missing env var must not open the admin pages to the internet.
@@ -17,5 +18,5 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!t/|api/e|api/oembed|api/health|_next/|uploads/|favicon.ico).*)'],
+  matcher: ['/((?!t/|api/e|api/oembed|api/health|widget\\.js|_next/|uploads/|favicon.ico).*)'],
 }

@@ -13,6 +13,7 @@ const VARIANTS = [
   // Host blocks everything of its own except inline styles, and only allows framing our origin.
   ['/strict-csp', 'Strict CSP', 'Content-Security-Policy locks the page down', () => ({ 'Content-Security-Policy': `default-src 'none'; style-src 'unsafe-inline'; frame-src ${link ? new URL(link).origin : "'none'"}` })],
   ['/no-referrer', 'No referrer', 'Referrer-Policy: no-referrer', () => ({ 'Referrer-Policy': 'no-referrer' })],
+  ['/widget', 'JS widget', 'Option C — lazy-mounts below the fold', () => ({})],
 ]
 
 const tourIcon = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="m10 9 5 3-5 3Z"/></svg>`
@@ -87,10 +88,13 @@ h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em;line-height:1.25}
 
   <div class="grid">
     <div>
+      ${path === '/widget' && link ? `<section class="box"><p class="none">↓ Scroll down — the widget only mounts once it scrolls near the viewport.</p></section><div style="height:140vh"></div>` : ''}
       <section class="box">
-        <div class="tourhead">${tourIcon(20)}<h2>Virtual tour</h2><span class="badge">Embedded</span></div>
+        <div class="tourhead">${tourIcon(20)}<h2>Virtual tour</h2><span class="badge">${path === '/widget' ? 'JS widget' : 'Embedded'}</span></div>
         ${link
-          ? `<div class="frame"><iframe src="${esc(link)}" width="100%" height="480" frameborder="0" allowfullscreen loading="lazy" title="Virtual tour"></iframe></div>`
+          ? (path === '/widget'
+              ? `<div class="deepvue-tour" data-src="${esc(link)}" style="width:100%;height:480px;background:#e5e7eb;border-radius:10px;overflow:hidden"><p style="padding:16px;color:#6b7280">Fallback link (shown until the widget script mounts the tour, or if JS is blocked): <a href="${esc(link)}" target="_blank" rel="noopener">View virtual tour</a></p></div><script src="${esc(new URL(link).origin)}/widget.js" async></script>`
+              : `<div class="frame"><iframe src="${esc(link)}" width="100%" height="480" frameborder="0" allowfullscreen loading="lazy" title="Virtual tour"></iframe></div>`)
           : '<div class="empty"><b>No tour embedded yet</b><br>Paste the iframe code or direct link into the demo bar above.</div>'}
       </section>
 
@@ -132,4 +136,4 @@ http.createServer(async (req, res) => {
   const info = await tourInfo()
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...variant[3]() })
   res.end(page(path, info))
-}).listen(port, () => console.log(`Sample portal on http://localhost:${port}/listing  /strict-csp  /no-referrer`))
+}).listen(port, () => console.log(`Sample portal on http://localhost:${port}/listing  /strict-csp  /no-referrer  /widget`))

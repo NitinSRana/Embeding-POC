@@ -90,6 +90,11 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
 
   const link = `${process.env.PUBLIC_BASE_URL}/t/${tour.token}`
   const iframe = `<iframe src="${link}"\n  width="100%" height="480" frameborder="0"\n  allowfullscreen loading="lazy"></iframe>`
+  // Deferred to Phase 2 per the scope doc, built now: same /t/token viewer, just lazy-mounted by
+  // widget.js once scrolled into view, with the plain link as a no-JS fallback. Faces the same
+  // filtering as the iframe on any page that sanitizes user content — its value is lazy-loading
+  // on pages with many tours, and degrading gracefully where a site allows scripts but not iframes.
+  const widget = `<div class="deepvue-tour" data-src="${link}" style="width:100%;height:480px">\n  <a href="${link}" target="_blank" rel="noopener">View virtual tour</a>\n</div>\n<script src="${process.env.PUBLIC_BASE_URL}/widget.js" async></script>`
   const expires = new Date(tour.expires_at)
   const active = expires > new Date()
 
@@ -171,9 +176,9 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
 
       <div className="section-title">
         <h2>Embed on a listing</h2>
-        <span className="muted small">Both methods use the same signed link, so expiry and analytics work either way.</span>
+        <span className="muted small">All three use the same signed link, so expiry and analytics work either way.</span>
       </div>
-      <div className="grid-half">
+      <div className="grid-third">
         <div className="card method">
           <div className="method-head"><h3>Option A · iframe</h3><span className="pill pill-accent">Recommended</span></div>
           <p>Shows the tour inline in the listing. Paste into any editor that accepts HTML.</p>
@@ -183,6 +188,11 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
           <div className="method-head"><h3>Option B · Direct link</h3><span className="pill pill-neutral">Fallback</span></div>
           <p>For portals that block embeds. Paste into a virtual-tour field or the description. Still tracked and billable.</p>
           <pre className="code">{link}<CopyButton text={link} label="Copy link" /></pre>
+        </div>
+        <div className="card method">
+          <div className="method-head"><h3>Option C · JS widget</h3><span className="pill pill-neutral">Advanced</span></div>
+          <p>Loads only once scrolled into view — lighter on listing pages with many tours. Falls back to a plain link if JavaScript is blocked.</p>
+          <pre className="code">{widget}<CopyButton text={widget} label="Copy code" /></pre>
         </div>
       </div>
 
