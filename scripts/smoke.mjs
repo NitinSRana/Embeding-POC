@@ -122,10 +122,19 @@ try {
   check('Viewer escapes HTML in the title', !viewerHtml.includes('<img src=x onerror'))
   const ogImage = viewerHtml.match(/<meta property="og:image" content="([^"]+)"/)?.[1]
   check('Link preview tags present (og:title, og:image)', viewerHtml.includes('property="og:title"') && /^https?:\/\//.test(ogImage ?? ''), ogImage)
+
+  // ---- oEmbed (lets WordPress-style platforms auto-embed a bare link past their iframe filter)
+  const oembedHref = viewerHtml.match(/<link rel="alternate" type="application\/json\+oembed" href="([^"]+)"/)?.[1]?.replace(/&amp;/g, '&')
+  check('oEmbed discovery tag present and absolute', /^https?:\/\//.test(oembedHref ?? ''), oembedHref)
+  const oembed = oembedHref && (await get(oembedHref))
+  const oembedBody = oembed && (await oembed.json())
+  check('oEmbed responds with a valid rich embed', oembed?.status === 200 && oembedBody?.type === 'rich' && oembedBody?.html?.includes(`/t/${token}`), JSON.stringify(oembedBody))
+  check('oEmbed rejects an unsupported format', (await get(oembedHref.replace('format=json', 'format=xml'))).status === 501)
   const sig = token.split('.')[2]
   const tampered = `${token.slice(0, -sig.length)}${sig[0] === 'A' ? 'B' : 'A'}${sig.slice(1)}`
   check('Tampered token shows "not valid"', (await (await get(`/t/${tampered}`)).text()).includes('link isn'))
   check('Garbage token shows "not valid"', (await (await get('/t/garbage')).text()).includes('link isn'))
+  check('oEmbed rejects a tampered token', (await get(oembedHref.replace(encodeURIComponent(token), encodeURIComponent(tampered)))).status === 404)
   const photo = viewerHtml.match(/<img src="([^"]+)"/)?.[1]?.replace(/&amp;/g, '&')
   const photoRes = photo && (await get(photo))
   check('Uploaded photo is served as an image', photoRes?.status === 200 && photoRes.headers.get('content-type')?.startsWith('image/'), `${photo} → ${photoRes?.status} ${photoRes?.headers.get('content-type')}`)
@@ -154,6 +163,8 @@ try {
   check('Delete tour succeeds', del.status === 204, `got ${del.status}`)
   check('Deleted tour page returns 404', (await admin(`/tours/${up.id}`)).status === 404)
   check('Deleted tour embeds show "not valid"', (await (await get(`/t/${token}`)).text()).includes('link isn'))
+  check('Deleted tour has no oEmbed discovery tag', !(await (await get(`/t/${token}`)).text()).includes('oembed'))
+  check('oEmbed rejects a deleted tour', (await get(oembedHref)).status === 404)
   if (photo) {
     const gone = (await get(photo, { cache: 'no-store' })).status
     check('Deleted tour photos are removed', [403, 404].includes(gone), `${photo} → ${gone} (Blob CDN cache can lag up to a minute)`)

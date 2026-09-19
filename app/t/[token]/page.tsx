@@ -15,11 +15,24 @@ const getTour = cache(async (token: string) => {
   return tour ?? null
 })
 
-// Link-preview card for LinkedIn, WhatsApp, Slack etc. Expired or invalid tours get a generic card.
+// Link-preview card for LinkedIn, WhatsApp, Slack etc. Invalid or expired tours get a generic card
+// (deliberately: no reason to keep advertising photos of a tour that's currently paused).
 export async function generateMetadata({ params }: { params: Promise<{ token: string }> }): Promise<Metadata> {
-  const tour = await getTour((await params).token)
+  const { token } = await params
+  const tour = await getTour(token)
   const generic: Metadata = { title: 'Virtual tour', robots: 'noindex', openGraph: { title: 'Virtual tour', siteName: 'DeepVue' } }
-  if (!tour || new Date(tour.expires_at) <= new Date()) return generic
+  if (!tour) return generic // no such tour at all — nothing to discover or embed
+
+  // oEmbed discovery, present whether the tour is live or expired: platforms cache oEmbed
+  // responses, so the discovered <iframe> must keep pointing at this same URL either way —
+  // /t/[token] itself renders the live gallery or the renewal panel depending on current state.
+  // Must be absolute: consumers fetch this href directly, with no page context to resolve a
+  // relative one against (Next.js does not auto-absolutize `alternates.types`).
+  const pageUrl = new URL(`/t/${token}`, process.env.PUBLIC_BASE_URL).toString()
+  const oembed = { alternates: { types: { 'application/json+oembed': new URL(`/api/oembed?url=${encodeURIComponent(pageUrl)}&format=json`, process.env.PUBLIC_BASE_URL).toString() } } }
+
+  if (new Date(tour.expires_at) <= new Date()) return { ...generic, ...oembed }
+
   const title = `${tour.title} · Virtual tour`
   const description = (tour.description || `${tour.photos.length}-photo virtual tour hosted by DeepVue`).slice(0, 200)
   const image = new URL(tour.photos[0], process.env.PUBLIC_BASE_URL).toString()
@@ -29,6 +42,7 @@ export async function generateMetadata({ params }: { params: Promise<{ token: st
     robots: 'noindex',
     openGraph: { type: 'website', siteName: 'DeepVue', title, description, images: [{ url: image }] },
     twitter: { card: 'summary_large_image', title, description, images: [image] },
+    ...oembed,
   }
 }
 
