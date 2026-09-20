@@ -19,7 +19,7 @@ Live site: https://pocembeding-five.vercel.app · Verdicts: **Works** / **Works 
 
 ---
 
-## The two conclusions that matter for the main build
+## The three conclusions that matter for the main build
 
 ### 1. The iframe does not survive user-generated content fields. Anywhere.
 
@@ -37,6 +37,33 @@ Three platforms, six distinct attempts, zero successes:
 This is not a DeepVue limitation — it's standard XSS hardening that applies to Matterport and every other provider equally. **The iframe is only viable where the poster controls the HTML** (their own site, a website builder's dedicated Embed/Custom-HTML widget) or where a portal wraps a whitelisted link in an iframe itself (Property Finder, Bayut, Zoopla, Rightmove — all still untested, blocked on agent access).
 
 Product implication: **the direct link is the primary method, not the fallback.** The embed generator should lead with it. The scope doc anticipated exactly this ("If it establishes that they do not, the finding is equally valuable").
+
+### 3. Inline display is still achievable — via a landing-page bridge (built and verified)
+
+Losing the iframe means losing inline presentation, which is most of its appeal. There is a way to get it back today, with no portal cooperation: the agent embeds the tour on **their own site** (where they control the HTML, so the iframe works), and the portal listing links to that page rather than to the tour.
+
+The non-obvious problem this creates — and the reason it needed building rather than just describing: with a bridge in the middle, `document.referrer` inside the iframe is the *agent's own site*, so every portal collapses into one bucket and per-portal reporting dies. The bridge page must forward its own `?s=` tag into the iframe `src`.
+
+Verified end to end in `host-test` (`/agent-page`), a view arriving via `/agent-page?s=sampleportal` records as:
+
+| Referring site | Referrer URL |
+|---|---|
+| `sampleportal (tagged)` | `http://localhost:4000/` |
+
+The raw referrer names the agent's site; the tag correctly credits the portal. Untagged bridge visits fall back to referrer detection as before.
+
+**The options, side by side:**
+
+| Method | Inline? | Keeps hosting / expiry / analytics? | Per-portal attribution? | Status |
+|---|---|---|---|---|
+| Direct link | No — click-through | **Yes** | Yes, with `?s=` tag | **Proven** on 3 platforms |
+| Landing-page bridge | **Yes** | **Yes** | Yes, via tag forwarding | **Proven** in host-test |
+| Portal's own tour/360 field | **Yes** (portal builds the iframe) | **Yes** | Portal-side | **Untested** — blocked on agent access |
+| Video (YouTube/Vimeo) | **Yes** | **No** — view happens on YouTube | No | Not pursued |
+| iframe pasted into a description | No — stripped | n/a | n/a | **Blocked** everywhere tested |
+| JS widget / oEmbed | No on UGC fields | Yes where they run | Yes | Built; neither fires on a sanitising field |
+
+Bridge caveats worth stating to the client: it's two hops (some drop-off), it needs the agent to have an editable website, and the tag is set manually per portal link today. The best outcome remains the portal's own tour field — inline, no bridge, no extra hop — which is an access problem, not a technical one.
 
 ### 2. Referrer-based attribution is not reliable. This one needed a code change.
 
