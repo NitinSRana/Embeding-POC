@@ -12,7 +12,7 @@ npm run check                # token checks: valid / expired / tampered
 npm run smoke -- [baseUrl]   # ~37 HTTP end-to-end checks; set ACCESS_CODE=... if the site has one; cleans up after itself
 ```
 
-Stand-in third-party portal on a different origin:
+Stand-in third-party portal on a different origin (pages: `/listing`, `/strict-csp`, `/no-referrer`, `/widget`, and `/agent-page` — the landing-page bridge):
 
 ```
 npm run host -- "http://localhost:3000/t/<token>"   # http://localhost:4000/listing, /strict-csp, /no-referrer

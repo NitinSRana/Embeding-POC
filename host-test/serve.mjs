@@ -18,6 +18,54 @@ const VARIANTS = [
 
 const tourIcon = (size) => `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="m10 9 5 3-5 3Z"/></svg>`
 
+// The "landing page bridge": the agent's OWN site, where they control the HTML, so the iframe
+// works even though every portal we tested strips it. The portal listing links here instead of
+// to the tour directly.
+//
+// The bit that matters: this page forwards its own ?s= tag into the iframe's src, so the tour
+// still records which *portal* sent the visitor. Without that, document.referrer inside the
+// iframe would just be this page, and every portal would collapse into one bucket.
+const bridgePage = (tourLink, source) => {
+  const tagged = source ? `${tourLink}${tourLink.includes('?') ? '&' : '?'}s=${encodeURIComponent(source)}` : tourLink
+  return `<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marina Heights — Harbour Homes</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:"Segoe UI",system-ui,Arial,sans-serif;color:#1f2933;background:#fff;line-height:1.55}
+.top{background:#0b2545;color:#fff;padding:14px 20px;font-weight:700;letter-spacing:-.01em}
+.wrap{max-width:900px;margin:0 auto;padding:24px 16px 60px}
+h1{font-size:26px;margin:0 0 4px}.loc{color:#6b7280;margin-bottom:18px}
+.frame{border-radius:10px;overflow:hidden;background:#e5e7eb;margin-bottom:20px}.frame iframe{display:block;border:0}
+.note{background:#eaf2fc;border:1px solid #bcd7f5;border-radius:10px;padding:14px 16px;font-size:14px;margin-bottom:20px}
+.note b{color:#1c5cab}
+.empty{padding:50px 20px;text-align:center;color:#6b7280;background:#f9fafb;border:1.5px dashed #d1d5db;border-radius:10px}
+code{background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:13px}
+</style></head>
+<body>
+<div class="top">Harbour Homes Real Estate</div>
+<div class="wrap">
+  <h1>Marina Heights — 3 bedroom apartment</h1>
+  <div class="loc">Dubai Marina · AED 2,400,000</div>
+
+  <div class="note">
+    <b>Landing-page bridge.</b> This stands in for the agent's own website, where they control the
+    HTML — so the iframe renders here even though portals strip it. The portal listing links to
+    this page rather than to the tour.
+    ${source
+      ? `Arrived tagged as <code>?s=${esc(source)}</code>, which is forwarded into the tour so the view is still attributed to that portal.`
+      : `No <code>?s=</code> tag on this page's URL, so the view will fall back to referrer detection (which would read as this site, not the portal).`}
+  </div>
+
+  ${tourLink
+    ? `<div class="frame"><iframe src="${esc(tagged)}" width="100%" height="480" allowfullscreen loading="lazy" title="Virtual tour"></iframe></div>`
+    : '<div class="empty"><b>No tour loaded</b><br>Paste a tour link into the demo bar on /listing first.</div>'}
+
+  <p>Full-height ceilings, uninterrupted marina views, two covered parking spaces. Contact Layla
+  Haddad on 800-000-000 to arrange a viewing.</p>
+</div>
+</body></html>`
+}
+
 // Fetched server-side, so the host page's own CSP doesn't affect it.
 async function tourInfo() {
   if (!link) return null
@@ -102,6 +150,8 @@ h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em;line-height:1.25}
         <h2>About this property</h2>
         ${info?.description ? `<p>${esc(info.description)}</p>` : '<p class="none">No description was added to this tour.</p>'}
         <p>Take the virtual tour: <a class="url" href="${esc(link)}" target="_blank">${esc(link)}</a></p>
+        <p>Or via the agent's own site (the landing-page bridge, carrying a <code>?s=</code> tag so the
+        portal still gets credit): <a class="url" href="/agent-page?s=sampleportal">Marina Heights on Harbour Homes</a></p>
       </section>` : ''}
     </div>
 
@@ -123,6 +173,11 @@ h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em;line-height:1.25}
 http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${port}`)
   const path = url.pathname === '/' ? '/listing' : url.pathname
+  // The agent's own site, reached from a portal listing. Not a VARIANT: it isn't a portal page.
+  if (path === '/agent-page') {
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    return res.end(bridgePage(link, url.searchParams.get('s') ?? ''))
+  }
   const variant = VARIANTS.find((v) => v[0] === path)
   if (!variant) return res.writeHead(404).end('not found')
   // Accept the direct link or the whole iframe snippet (pull out its src).
@@ -136,4 +191,4 @@ http.createServer(async (req, res) => {
   const info = await tourInfo()
   res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', ...variant[3]() })
   res.end(page(path, info))
-}).listen(port, () => console.log(`Sample portal on http://localhost:${port}/listing  /strict-csp  /no-referrer  /widget`))
+}).listen(port, () => console.log(`Sample portal on http://localhost:${port}/listing  /strict-csp  /no-referrer  /widget  /agent-page`))
