@@ -231,3 +231,10 @@ td.clip { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow
 .v-card .brand { margin-top: 14px; font-size: 11px; color: var(--muted); letter-spacing: .04em; }
 .v-card .brand b { color: var(--brand); }
 @media (max-height: 340px) { .v-card .lock, .v-card .owner { display: none; } }
+
+/* Source tag picker on the embed screen */
+.source-picker { margin-bottom: 20px; }
+.source-picker label { display: block; margin-bottom: 10px; }
+.source-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.source-row .input { flex: 0 1 220px; }
+.source-chip { border: 0; cursor: pointer; font-family: inherit; }

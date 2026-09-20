@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { query } from '@/lib/db'
 import { verify } from '@/lib/token'
+import { slugSource } from '@/lib/source'
 import Beacon from './Beacon'
 import Gallery from './Gallery'
 
@@ -53,10 +54,12 @@ const Brand = () => <div className="brand">Virtual tour by <b>DeepVue</b></div>
 
 export default async function Viewer({ params, searchParams }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ preview?: string }>
+  searchParams: Promise<{ preview?: string; s?: string }>
 }) {
   const { token } = await params
-  const preview = (await searchParams).preview === '1' // admin preview: don't count it
+  const sp = await searchParams
+  const preview = sp.preview === '1' // admin preview: don't count it
+  const source = slugSource(sp.s) || null // which portal this embed was posted on
   const tour = await getTour(token)
 
   if (!tour) {
@@ -79,7 +82,7 @@ export default async function Viewer({ params, searchParams }: {
   if (new Date(tour.expires_at) <= new Date()) {
     return (
       <div className="v-panel">
-        {!preview && <Beacon token={token} type="expired_load" refererHeader={refererHeader} />}
+        {!preview && <Beacon token={token} type="expired_load" refererHeader={refererHeader} source={source} />}
         <div className="bg" style={{ backgroundImage: `url(${JSON.stringify(tour.photos[0])})` }} />
         <div className="v-card">
           <div className="lock"><Lock /></div>
@@ -94,8 +97,8 @@ export default async function Viewer({ params, searchParams }: {
 
   return (
     <>
-      {!preview && <Beacon token={token} type="load" refererHeader={refererHeader} />}
-      <Gallery token={token} title={tour.title} photos={tour.photos} track={!preview} />
+      {!preview && <Beacon token={token} type="load" refererHeader={refererHeader} source={source} />}
+      <Gallery token={token} title={tour.title} photos={tour.photos} track={!preview} source={source} />
     </>
   )
 }

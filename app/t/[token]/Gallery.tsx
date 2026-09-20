@@ -8,7 +8,7 @@ const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
   </svg>
 )
 
-export default function Gallery({ token, title, photos, track }: { token: string; title: string; photos: string[]; track: boolean }) {
+export default function Gallery({ token, title, photos, track, source }: { token: string; title: string; photos: string[]; track: boolean; source: string | null }) {
   const strip = useRef<HTMLDivElement>(null)
   const root = useRef<HTMLDivElement>(null)
   const clicked = useRef(0)
@@ -21,7 +21,7 @@ export default function Gallery({ token, title, photos, track }: { token: string
   }
   const onInteract = () => {
     // One click event per interaction burst, not per scroll frame.
-    if (track && Date.now() - clicked.current > 1000) send(token, 'click')
+    if (track && Date.now() - clicked.current > 1000) send(token, 'click', null, source)
     clicked.current = Date.now()
   }
   const fullscreen = () => {

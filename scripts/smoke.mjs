@@ -164,6 +164,15 @@ try {
   check('Analytics counts the clicks', tile(stats, 'Interactions') === 2, `clicks=${tile(stats, 'Interactions')}`)
   check('Analytics attributes the referring site', stats.includes('portal.example'))
 
+  // ---- Source tagging: the attribution that survives rel="noreferrer" and link shorteners
+  check('Beacon accepts a tagged event with no referrer at all', (await beacon({ token, type: 'load', sid: 'smoke-tagged', referrer: null, source: 'vivauae' })).status === 204)
+  check('Beacon sanitises a junk source tag', (await beacon({ token, type: 'load', sid: 'smoke-junk', source: ' Property Finder!! <script>x</script> ' })).status === 204)
+  check('Viewer accepts a ?s= tagged link', (await get(`/t/${token}?s=dubaisel`)).status === 200)
+  const tagged = await (await admin(`/tours/${up.id}`)).text()
+  check('Tagged views are attributed by tag, not referrer', tagged.includes('vivauae (tagged)'))
+  check('Junk source tag is slugified before display', tagged.includes('property-finder') && !tagged.includes('<script>x</script>'))
+  check('Embed screen offers the source picker', tagged.includes('Where are you posting this?'))
+
   // ---- Delete
   const del = await admin(`/api/tours/${up.id}`, { method: 'DELETE' })
   created.splice(created.indexOf(up.id), 1)

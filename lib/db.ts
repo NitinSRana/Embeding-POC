@@ -20,7 +20,8 @@ create table if not exists events (
   user_agent text,
   device text,
   created_at timestamptz not null default now()
-);`
+);
+alter table events add column if not exists source text;`
 
 type Q = (sql: string, params?: unknown[]) => Promise<{ rows: any[] }>
 

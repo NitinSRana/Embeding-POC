@@ -4,9 +4,11 @@ import Link from 'next/link'
 import { query } from '@/lib/db'
 import { sign } from '@/lib/token'
 import Shell from '../../Shell'
-import CopyButton from './CopyButton'
+import EmbedCodes from './EmbedCodes'
 import AutoRefresh from './AutoRefresh'
 import DeleteTour from './DeleteTour'
+import LocalTime from './LocalTime'
+import Timeline from './Timeline'
 
 export const dynamic = 'force-dynamic'
 
@@ -88,13 +90,9 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
   // ponytail: all events loaded for stats; move to SQL aggregates past ~100k events
   const events = await query('select * from events where tour_id = $1 order by created_at desc', [id])
 
+  // All three embed snippets (iframe, direct link, JS widget) are built client-side in
+  // EmbedCodes so the source tag can be applied to them live as it's typed.
   const link = `${process.env.PUBLIC_BASE_URL}/t/${tour.token}`
-  const iframe = `<iframe src="${link}"\n  width="100%" height="480" frameborder="0"\n  allowfullscreen loading="lazy"></iframe>`
-  // Deferred to Phase 2 per the scope doc, built now: same /t/token viewer, just lazy-mounted by
-  // widget.js once scrolled into view, with the plain link as a no-JS fallback. Faces the same
-  // filtering as the iframe on any page that sanitizes user content — its value is lazy-loading
-  // on pages with many tours, and degrading gracefully where a site allows scripts but not iframes.
-  const widget = `<div class="deepvue-tour" data-src="${link}" style="width:100%;height:480px">\n  <a href="${link}" target="_blank" rel="noopener">View virtual tour</a>\n</div>\n<script src="${process.env.PUBLIC_BASE_URL}/widget.js" async></script>`
   const expires = new Date(tour.expires_at)
   const active = expires > new Date()
 
@@ -111,7 +109,13 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
   const unique = new Set(views.map((e) => e.session_id)).size
   // Referrer as the viewer saw it (document.referrer), falling back to the Referer header on the viewer request.
   const refDomain = (e: any) => host(e.referrer) ?? host(e.referer_header)
-  const refLabel = (e: any) => { const d = refDomain(e); return d ? platformLabel(d) : null }
+  // The source tag wins over the referrer: it's explicit, and it's the only signal that
+  // survives portals that strip the referrer entirely (vivaUAE's rel="noreferrer", lnkd.in).
+  const refLabel = (e: any) => {
+    if (e.source) return `${e.source} (tagged)`
+    const d = refDomain(e)
+    return d ? platformLabel(d) : null
+  }
   const tl = timeline(views.map((e) => new Date(e.created_at).getTime()))
   const tlMax = Math.max(1, ...tl.buckets.map((b) => b.count))
 
@@ -124,7 +128,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
             <h1>{tour.title}</h1>
             <span className={`pill ${active ? 'pill-good' : 'pill-bad'}`}>{active ? 'Active' : 'Expired'}</span>
           </div>
-          <p className="sub">{tour.photos.length} {tour.photos.length === 1 ? 'photo' : 'photos'} · created {fmtDate(new Date(tour.created_at))}</p>
+          <p className="sub">{tour.photos.length} {tour.photos.length === 1 ? 'photo' : 'photos'} · created <LocalTime iso={new Date(tour.created_at).toISOString()} /></p>
         </div>
         <div className="btn-row">
         <DeleteTour id={id} title={tour.title} />
@@ -162,7 +166,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
           <dl className="kv">
-            <dt>{active ? 'Expires' : 'Expired'}</dt><dd>{fmtDate(expires)}</dd>
+            <dt>{active ? 'Expires' : 'Expired'}</dt><dd><LocalTime iso={expires.toISOString()} /></dd>
             <dt>Access token</dt><dd>ES256 signed</dd>
             <dt>Embeds affected</dt><dd>All, instantly</dd>
           </dl>
@@ -178,23 +182,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
         <h2>Embed on a listing</h2>
         <span className="muted small">All three use the same signed link, so expiry and analytics work either way.</span>
       </div>
-      <div className="grid-third">
-        <div className="card method">
-          <div className="method-head"><h3>Option A · iframe</h3><span className="pill pill-accent">Recommended</span></div>
-          <p>Shows the tour inline in the listing. Paste into any editor that accepts HTML.</p>
-          <pre className="code">{iframe}<CopyButton text={iframe} label="Copy code" /></pre>
-        </div>
-        <div className="card method">
-          <div className="method-head"><h3>Option B · Direct link</h3><span className="pill pill-neutral">Fallback</span></div>
-          <p>For portals that block embeds. Paste into a virtual-tour field or the description. Still tracked and billable.</p>
-          <pre className="code">{link}<CopyButton text={link} label="Copy link" /></pre>
-        </div>
-        <div className="card method">
-          <div className="method-head"><h3>Option C · JS widget</h3><span className="pill pill-neutral">Advanced</span></div>
-          <p>Loads only once scrolled into view — lighter on listing pages with many tours. Falls back to a plain link if JavaScript is blocked.</p>
-          <pre className="code">{widget}<CopyButton text={widget} label="Copy code" /></pre>
-        </div>
-      </div>
+      <EmbedCodes link={link} widgetSrc={`${process.env.PUBLIC_BASE_URL}/widget.js`} />
 
       <div className="section-title">
         <h2>Analytics</h2>
@@ -210,19 +198,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
       <div className="stack">
         <div className="card">
           <div className="card-head"><div><h2>Views over time</h2><p>{tl.name} intervals</p></div></div>
-          <div className="cols" role="img" aria-label={`Views over time, peak ${tlMax} per interval`}>
-            <span className="ymax">{tlMax}</span>
-            {tl.buckets.map((b) => (
-              <div key={b.start} className="col" data-tip={`${tl.label(b.start)} · ${b.count} ${b.count === 1 ? 'view' : 'views'}`}>
-                <span style={{ height: `${(b.count / tlMax) * 100}%` }} />
-              </div>
-            ))}
-          </div>
-          <div className="xlabels">
-            <span>{tl.label(tl.buckets[0].start)}</span>
-            <span>{tl.label(tl.buckets[Math.floor(tl.buckets.length / 2)].start)}</span>
-            <span>{tl.label(tl.buckets.at(-1)!.start)}</span>
-          </div>
+          <Timeline buckets={tl.buckets} daily={tl.name === 'Daily'} max={tlMax} />
         </div>
 
         <div className="grid-half">
@@ -250,7 +226,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
                     const ref = e.referrer || e.referer_header
                     return (
                       <tr key={e.id}>
-                        <td className="nowrap">{new Date(e.created_at).toLocaleString(undefined, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</td>
+                        <td className="nowrap"><LocalTime iso={new Date(e.created_at).toISOString()} format="log" /></td>
                         <td><span className={`pill ${cls}`}>{label}</span></td>
                         <td className="nowrap">{refLabel(e) ?? <span className="muted">{UNKNOWN}</span>}</td>
                         <td>{e.device === 'mobile' ? 'Mobile' : 'Desktop'}</td>
