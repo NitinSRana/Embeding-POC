@@ -35,11 +35,22 @@ const beacon = (body) => get('/api/e', { method: 'POST', body: typeof body === '
 const tile = (html, label) => Number(html.match(new RegExp(`${label}</div><div class="value">([\\d,]+)`))?.[1]?.replace(/,/g, ''))
 const track = (id) => { if (id) created.push(id); return id }
 
+// Optional property details shown on the standalone (direct-link) page.
+const DETAILS = {
+  address: 'Smoke Street, Dubai',
+  price: 'AED 1,234,000',
+  beds: '2',
+  baths: '3',
+  area: '900 sq ft',
+  amenities: 'Swimming Pool\nGymnasium',
+}
+
 // Multipart form upload (local flow; also used for validation checks everywhere).
 async function uploadForm(title, files, description = 'Smoke test description') {
   const fd = new FormData()
   if (title !== null) fd.append('title', title)
   fd.append('description', description)
+  for (const [k, v] of Object.entries(DETAILS)) fd.append(k, v)
   for (const [name, type, bytes] of files) fd.append('photos', new Blob([bytes], { type }), name)
   const r = await admin('/api/tours', { method: 'POST', body: fd, redirect: 'manual' })
   return { status: r.status, id: track(r.headers.get('location')?.match(/\/tours\/([0-9a-f-]{36})/)?.[1]), text: r.status >= 400 ? await r.text() : '' }
@@ -58,7 +69,7 @@ async function uploadBlob(title, files) {
   return createJson(title, photos)
 }
 async function createJson(title, photos) {
-  const r = await admin('/api/tours', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: 'Smoke test description', photos }) })
+  const r = await admin('/api/tours', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ title, description: 'Smoke test description', photos, ...DETAILS }) })
   return { status: r.status, id: track(r.ok ? (await r.json()).id : null), text: r.ok ? '' : await r.text() }
 }
 
@@ -128,6 +139,7 @@ try {
 
   // ---- Direct link opens a full page; iframe/widget get the bare gallery
   check('Direct link opens the standalone page with title and description', viewerHtml.includes('class="sa"') && viewerHtml.includes('sa-desc'))
+  check('Standalone page shows the property details', ['Smoke Street, Dubai', 'AED 1,234,000', '2 Beds', '3 Baths', '900 sq ft', 'Swimming Pool'].every((x) => viewerHtml.includes(x)), 'missing: ' + ['Smoke Street, Dubai', 'AED 1,234,000', '2 Beds', '3 Baths', '900 sq ft', 'Swimming Pool'].filter((x) => !viewerHtml.includes(x)).join(', '))
   const framedByHeader = await (await get(`/t/${token}`, { headers: { 'Sec-Fetch-Dest': 'iframe' } })).text()
   check('Sec-Fetch-Dest: iframe renders the bare gallery', !framedByHeader.includes('class="sa"') && framedByHeader.includes('v-root'))
   const framedByParam = await (await get(`/t/${token}?e=1`)).text()

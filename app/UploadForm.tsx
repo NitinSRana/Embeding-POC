@@ -54,7 +54,17 @@ export default function UploadForm({ blob }: { blob: boolean }) {
       const r = await fetch('/api/tours', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: form.get('title'), description: form.get('description'), photos }),
+        body: JSON.stringify({
+          title: form.get('title'),
+          description: form.get('description'),
+          address: form.get('address'),
+          price: form.get('price'),
+          beds: form.get('beds'),
+          baths: form.get('baths'),
+          area: form.get('area'),
+          amenities: form.get('amenities'),
+          photos,
+        }),
       })
       if (!r.ok) throw new Error(`saving the tour (HTTP ${r.status}) ${await r.text()}`.trim())
       window.location.href = `/tours/${(await r.json()).id}`
@@ -73,8 +83,34 @@ export default function UploadForm({ blob }: { blob: boolean }) {
         <input className="input" id="title" name="title" type="text" required maxLength={200} placeholder="e.g. 3-bed apartment, Marina Residences" />
       </div>
       <div className="field">
-        <label htmlFor="description">Short description <span className="hint">(optional)</span></label>
+        <label htmlFor="address">Address <span className="hint">(optional)</span></label>
+        <input className="input" id="address" name="address" type="text" maxLength={200} placeholder="e.g. Warsan 4, Dubai, UAE" />
+      </div>
+      <div className="field-row">
+        <div className="field">
+          <label htmlFor="price">Price <span className="hint">(optional)</span></label>
+          <input className="input" id="price" name="price" type="text" maxLength={60} placeholder="AED 2,400,000" />
+        </div>
+        <div className="field">
+          <label htmlFor="beds">Beds</label>
+          <input className="input" id="beds" name="beds" type="text" maxLength={20} placeholder="3" />
+        </div>
+        <div className="field">
+          <label htmlFor="baths">Baths</label>
+          <input className="input" id="baths" name="baths" type="text" maxLength={20} placeholder="2" />
+        </div>
+        <div className="field">
+          <label htmlFor="area">Size</label>
+          <input className="input" id="area" name="area" type="text" maxLength={40} placeholder="775 sq ft" />
+        </div>
+      </div>
+      <div className="field">
+        <label htmlFor="description">About this property <span className="hint">(optional)</span></label>
         <textarea className="input" id="description" name="description" rows={3} maxLength={2000} placeholder="Sea views, open-plan living, two parking spaces…" />
+      </div>
+      <div className="field">
+        <label htmlFor="amenities">Amenities <span className="hint">(optional — one per line)</span></label>
+        <textarea className="input" id="amenities" name="amenities" rows={3} placeholder={'Swimming pool\nGymnasium\nCovered parking'} />
       </div>
       <div className="field">
         <label htmlFor="photos">Photos</label>

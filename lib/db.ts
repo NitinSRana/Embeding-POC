@@ -10,6 +10,12 @@ create table if not exists tours (
   created_at timestamptz not null default now()
 );
 alter table tours add column if not exists token text;
+alter table tours add column if not exists address text;
+alter table tours add column if not exists price text;
+alter table tours add column if not exists beds text;
+alter table tours add column if not exists baths text;
+alter table tours add column if not exists area text;
+alter table tours add column if not exists amenities jsonb;
 create table if not exists events (
   id bigserial primary key,
   tour_id uuid not null references tours(id),

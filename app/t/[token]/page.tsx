@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 // Shared by generateMetadata and the page within one request.
 const getTour = cache(async (token: string) => {
   const tid = await verify(token)
-  const [tour] = tid ? await query('select title, description, photos, expires_at from tours where id = $1', [tid]) : []
+  const [tour] = tid ? await query('select title, description, photos, expires_at, address, price, beds, baths, area, amenities from tours where id = $1', [tid]) : []
   return tour ?? null
 })
 
@@ -106,7 +106,7 @@ export default async function Viewer({ params, searchParams }: {
       {!preview && <Beacon token={token} type="load" refererHeader={refererHeader} source={source} />}
       {embedded
         ? <Gallery token={token} title={tour.title} photos={tour.photos} track={!preview} source={source} />
-        : <Standalone token={token} title={tour.title} description={tour.description ?? ''} photos={tour.photos} track={!preview} source={source} />}
+        : <Standalone token={token} tour={tour} track={!preview} source={source} />}
     </>
   )
 }

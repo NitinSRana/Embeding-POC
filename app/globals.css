@@ -248,13 +248,24 @@ td.clip { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow
 .sa-main { flex: 1; width: 100%; max-width: 860px; margin: 0 auto; padding: 20px 16px 32px; }
 .sa-stage { position: relative; height: min(62dvh, 560px); border-radius: 14px; overflow: hidden; background: #0b0f17; box-shadow: var(--shadow); }
 .sa-stage .v-root.v-inline { height: 100%; }
-.sa-info { padding: 20px 4px 0; }
+.sa-info { padding: 22px 4px 0; }
+.sa-head { display: flex; align-items: flex-start; gap: 16px; justify-content: space-between; flex-wrap: wrap; }
 .sa-info h1 { font-size: clamp(20px, 4vw, 28px); }
-.sa-meta { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
-.sa-desc { color: var(--ink-2); margin: 14px 0 0; white-space: pre-line; line-height: 1.6; }
+.sa-addr { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 14px; margin: 6px 0 0; }
+.sa-price { font-size: clamp(18px, 3.4vw, 24px); font-weight: 700; color: var(--ink); white-space: nowrap; }
+.sa-facts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.sa-fact { background: var(--surface); border: 1px solid var(--line); border-radius: 9px; padding: 8px 13px; font-size: 14px; font-weight: 600; }
+.sa-block { margin-top: 26px; }
+.sa-block h2 { font-size: 16px; margin-bottom: 8px; }
+.sa-desc { color: var(--ink-2); margin: 0; white-space: pre-line; line-height: 1.65; max-width: 68ch; }
+.sa-amen { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 8px 18px; padding: 0; margin: 0; list-style: none; color: var(--ink-2); font-size: 14px; }
+.sa-amen li { display: flex; align-items: flex-start; gap: 8px; }
+.sa-amen li::before { content: '✓'; color: var(--good); font-weight: 700; flex: none; }
 .sa-foot { text-align: center; padding: 16px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--line); }
 .sa-foot b { color: var(--brand); }
 /* Inline in the standalone page, the title and branding live in the page itself — don't repeat
    them over the photo. The dots stay: they're navigation, not decoration. */
 .v-inline .v-title, .v-inline .v-powered { display: none; }
 .v-inline .v-bottom { padding-top: 12px; background: linear-gradient(transparent, rgba(0,0,0,.45)); }
+.field-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1.4fr; gap: 12px; }
+@media (max-width: 640px) { .field-row { grid-template-columns: 1fr 1fr; } }
