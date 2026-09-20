@@ -11,10 +11,14 @@ const SUGGESTIONS = ['propertyfinder', 'bayut', 'dubizzle', 'dubaisel', 'vivauae
 export default function EmbedCodes({ link, widgetSrc }: { link: string; widgetSrc: string }) {
   const [source, setSource] = useState('')
   const tag = slugSource(source)
+  // The direct link opens as a full page (title, description, branding); the iframe and widget
+  // carry e=1 so the tour renders bare inside a listing that already provides that context.
+  // The widget's fallback <a> is a real click-through, so it gets the page treatment too.
   const tagged = tag ? `${link}?s=${tag}` : link
+  const embedSrc = `${link}?${tag ? `s=${tag}&` : ''}e=1`
 
-  const iframe = `<iframe src="${tagged}"\n  width="100%" height="480" frameborder="0"\n  allowfullscreen loading="lazy"></iframe>`
-  const widget = `<div class="deepvue-tour" data-src="${tagged}" style="width:100%;height:480px">\n  <a href="${tagged}" target="_blank" rel="noopener">View virtual tour</a>\n</div>\n<script src="${widgetSrc}" async></script>`
+  const iframe = `<iframe src="${embedSrc}"\n  width="100%" height="480" frameborder="0"\n  allowfullscreen loading="lazy"></iframe>`
+  const widget = `<div class="deepvue-tour" data-src="${embedSrc}" style="width:100%;height:480px">\n  <a href="${tagged}" target="_blank" rel="noopener">View virtual tour</a>\n</div>\n<script src="${widgetSrc}" async></script>`
 
   return (
     <>

@@ -8,7 +8,7 @@ const Chevron = ({ dir }: { dir: 'l' | 'r' }) => (
   </svg>
 )
 
-export default function Gallery({ token, title, photos, track, source }: { token: string; title: string; photos: string[]; track: boolean; source: string | null }) {
+export default function Gallery({ token, title, photos, track, source, inline = false }: { token: string; title: string; photos: string[]; track: boolean; source: string | null; inline?: boolean }) {
   const strip = useRef<HTMLDivElement>(null)
   const root = useRef<HTMLDivElement>(null)
   const clicked = useRef(0)
@@ -31,7 +31,7 @@ export default function Gallery({ token, title, photos, track, source }: { token
 
   return (
     <div
-      className="v-root"
+      className={`v-root${inline ? ' v-inline' : ''}`}
       ref={root}
       tabIndex={0}
       aria-label={`${title} virtual tour`}

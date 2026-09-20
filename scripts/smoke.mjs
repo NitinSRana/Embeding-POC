@@ -125,6 +125,13 @@ try {
   const viewer = await get(`/t/${token}`)
   const viewerHtml = await viewer.text()
   check('Viewer is public and renders the gallery', viewer.status === 200 && viewerHtml.includes('v-root'))
+
+  // ---- Direct link opens a full page; iframe/widget get the bare gallery
+  check('Direct link opens the standalone page with title and description', viewerHtml.includes('class="sa"') && viewerHtml.includes('sa-desc'))
+  const framedByHeader = await (await get(`/t/${token}`, { headers: { 'Sec-Fetch-Dest': 'iframe' } })).text()
+  check('Sec-Fetch-Dest: iframe renders the bare gallery', !framedByHeader.includes('class="sa"') && framedByHeader.includes('v-root'))
+  const framedByParam = await (await get(`/t/${token}?e=1`)).text()
+  check('?e=1 renders the bare gallery (fallback for browsers without the header)', !framedByParam.includes('class="sa"') && framedByParam.includes('v-root'))
   check('Viewer can be framed by any site', viewer.headers.get('content-security-policy') === 'frame-ancestors *', viewer.headers.get('content-security-policy'))
   check('Viewer escapes HTML in the title', !viewerHtml.includes('<img src=x onerror'))
   const ogImage = viewerHtml.match(/<meta property="og:image" content="([^"]+)"/)?.[1]

@@ -148,7 +148,7 @@ export default async function TourPage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
           <div className="preview">
-            <iframe src={`/t/${tour.token}?preview=1`} title={`${tour.title} preview`} allowFullScreen />
+            <iframe src={`/t/${tour.token}?preview=1&e=1`} title={`${tour.title} preview`} allowFullScreen />
           </div>
         </div>
 

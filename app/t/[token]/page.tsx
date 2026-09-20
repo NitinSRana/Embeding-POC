@@ -6,6 +6,7 @@ import { verify } from '@/lib/token'
 import { slugSource } from '@/lib/source'
 import Beacon from './Beacon'
 import Gallery from './Gallery'
+import Standalone from './Standalone'
 
 export const dynamic = 'force-dynamic'
 
@@ -54,7 +55,7 @@ const Brand = () => <div className="brand">Virtual tour by <b>DeepVue</b></div>
 
 export default async function Viewer({ params, searchParams }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ preview?: string; s?: string }>
+  searchParams: Promise<{ preview?: string; s?: string; e?: string }>
 }) {
   const { token } = await params
   const sp = await searchParams
@@ -77,7 +78,12 @@ export default async function Viewer({ params, searchParams }: {
     )
   }
 
-  const refererHeader = (await headers()).get('referer')
+  const h = await headers()
+  const refererHeader = h.get('referer')
+  // How this was opened decides the layout. Browsers send Sec-Fetch-Dest: iframe for a framed
+  // load and 'document' for a top-level navigation. Our own embed codes also carry ?e=1, so
+  // framing is still detected on browsers that don't send the header (Safari before 16.4).
+  const embedded = sp.e === '1' || ['iframe', 'frame', 'embed', 'object'].includes(h.get('sec-fetch-dest') ?? '')
 
   if (new Date(tour.expires_at) <= new Date()) {
     return (
@@ -98,7 +104,9 @@ export default async function Viewer({ params, searchParams }: {
   return (
     <>
       {!preview && <Beacon token={token} type="load" refererHeader={refererHeader} source={source} />}
-      <Gallery token={token} title={tour.title} photos={tour.photos} track={!preview} source={source} />
+      {embedded
+        ? <Gallery token={token} title={tour.title} photos={tour.photos} track={!preview} source={source} />
+        : <Standalone token={token} title={tour.title} description={tour.description ?? ''} photos={tour.photos} track={!preview} source={source} />}
     </>
   )
 }
