@@ -42,14 +42,14 @@ export default function EmbedCodes({ link, widgetSrc }: { link: string; widgetSr
 
       <div className="grid-third">
         <div className="card method">
-          <div className="method-head"><h3>Option A · iframe</h3><span className="pill pill-accent">Recommended</span></div>
-          <p>Shows the tour inline in the listing. Paste into any editor that accepts HTML.</p>
-          <pre className="code">{iframe}<CopyButton text={iframe} label="Copy code" /></pre>
+          <div className="method-head"><h3>Option A · Direct link</h3><span className="pill pill-accent">Recommended</span></div>
+          <p>The method that works on every portal tested. Paste it into a dedicated virtual-tour or website field. To put it in a description, select some text and use the editor&rsquo;s link button — a bare URL is often left as plain text, not turned into a link.</p>
+          <pre className="code">{tagged}<CopyButton text={tagged} label="Copy link" /></pre>
         </div>
         <div className="card method">
-          <div className="method-head"><h3>Option B · Direct link</h3><span className="pill pill-neutral">Fallback</span></div>
-          <p>For portals that block embeds. Paste into a virtual-tour field or the description. Still tracked and billable.</p>
-          <pre className="code">{tagged}<CopyButton text={tagged} label="Copy link" /></pre>
+          <div className="method-head"><h3>Option B · iframe</h3><span className="pill pill-neutral">Rarely accepted</span></div>
+          <p>Shows the tour inline, but portals strip or escape HTML in anything a user types. Use only where a real embed field is offered.</p>
+          <pre className="code">{iframe}<CopyButton text={iframe} label="Copy code" /></pre>
         </div>
         <div className="card method">
           <div className="method-head"><h3>Option C · JS widget</h3><span className="pill pill-neutral">Advanced</span></div>
