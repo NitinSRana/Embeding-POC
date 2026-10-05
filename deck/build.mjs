@@ -169,9 +169,9 @@ const darkSlide = () => {
   const s = pres.addSlide()
   s.background = { color: WHITE }
   kicker(s, 'FINDING 1', { color: RED })
-  title(s, 'The iframe never survives a description field')
+  title(s, 'Pasted iframe HTML never survives')
 
-  s.addText('Six attempts, three platforms, zero successes:', {
+  s.addText('Nothing we typed was accepted — five attempts, zero successes:', {
     x: M, y: 1.86, w: 6.4, h: 0.32, fontFace: SANS, fontSize: 14, color: BODY, isTextBox: true, margin: 0,
   })
 
@@ -180,7 +180,6 @@ const darkSlide = () => {
     ['DubaiSel — visual editor', 'Escaped to visible text'],
     ['DubaiSel — raw HTML tab', 'Request rejected outright'],
     ['DubaiSel — bare URL', 'Not turned into a link'],
-    ['DubaiSel — oEmbed', 'Not picked up'],
     ['vivaUAE — description', 'Silently stripped'],
   ]
   attempts.forEach(([platform, result], i) => {
@@ -207,13 +206,13 @@ const darkSlide = () => {
 
   card(s, { x: 7.5, y: 4.68, w: 5.1, h: 1.9, fill: GREEN_TINT, line: 'BBE8CD' })
   badge(s, { x: 7.85, y: 4.95, fill: GREEN, glyph: '✓' })
-  s.addText('The direct link worked everywhere', {
+  s.addText('But the portal can embed it itself', {
     x: 8.42, y: 4.98, w: 3.9, h: 0.38, fontFace: SANS, fontSize: 14, bold: true, color: INK, isTextBox: true, margin: 0,
   })
-  s.addText('So it becomes the primary method. Inline display stays available on a portal’s own tour field, or a page the agent controls.', {
-    x: 7.85, y: 5.5, w: 4.4, h: 0.98, fontFace: SANS, fontSize: 12.5, color: BODY, isTextBox: true, margin: 0,
+  s.addText('A bare URL in DubaiSel’s description made its WordPress fetch our oEmbed endpoint and build its own iframe. The tour renders inline on the live listing — but sandboxed, so it reports no analytics.', {
+    x: 7.85, y: 5.5, w: 4.4, h: 1.0, fontFace: SANS, fontSize: 11.5, color: BODY, isTextBox: true, margin: 0,
   })
-  s.addNotes('The point is not that something failed. The point is that the POC told us which method to build, before Phase 2 was estimated.')
+  s.addNotes('The point is not that something failed. Two things were learned: typed HTML is always stripped, and the portal will still embed us if we let its own pipeline do it. Inline display or measurement — on DubaiSel you pick one. The direct link stays the method to build on.')
 }
 
 // ================= 5. Finding 2 =================

@@ -24,9 +24,9 @@ when the subscription lapses?**
 
 ## The two findings that change the product
 
-### 1. The iframe does not survive a portal's description field. The direct link does.
+### 1. Pasted iframe HTML never survives. An iframe the portal builds for itself does.
 
-Six attempts across three platforms, zero successes:
+Nothing we *typed* was ever accepted — five attempts, zero successes:
 
 | Attempt | Result |
 |---|---|
@@ -34,16 +34,35 @@ Six attempts across three platforms, zero successes:
 | DubaiSel, visual editor | Escaped to visible text |
 | DubaiSel, raw HTML tab | Request rejected outright |
 | DubaiSel, bare URL | Not linkified |
-| DubaiSel, oEmbed | Not picked up |
 | vivaUAE, description | Silently stripped |
 
 This is standard security hardening on user-submitted content — it applies to Matterport and
-every other provider equally, so it is not a DeepVue weakness. The consequence is a product
-decision: **the direct link is the primary method, not the fallback.** It worked on all three
-platforms, and it keeps hosting, expiry and billing under DeepVue's control.
+every other provider equally, so it is not a DeepVue weakness.
 
-Inline display is still available three ways: a portal's own tour-URL field, a page the agent
-controls, or any site with a real HTML embed widget.
+**But it only governs what the poster types, not what the portal chooses to embed.** DubaiSel
+runs WordPress. Pasting the bare tour URL into the description made it fetch our oEmbed
+endpoint and build its own iframe: the tour now renders inline on the live listing at
+781×439, all four photos, navigable. That is the inline display the pasted iframe could never
+buy — obtained by asking the platform rather than instructing it, and it is why the POC
+shipped oEmbed support.
+
+It carries one real cost. WordPress wraps an untrusted provider in
+`sandbox="allow-scripts"`, which gives the frame an opaque origin: our scripts don't run, so
+**an oEmbed embed reports no analytics at all.** Confirmed by network capture — an ordinary
+load posts its view, the sandboxed one makes no request. It also meant anything interactive
+had to work without JavaScript, so the viewer's navigation was rebuilt on per-slide anchors
+and re-verified on the live listing.
+
+**So the choice is per-listing, and it is a real trade-off:**
+
+| Method | Inline on the listing | Analytics | Use when |
+|---|---|---|---|
+| Bare URL → oEmbed | **Yes** | **None** | Presentation matters more than measurement |
+| Explicit hyperlink | No — opens our page | **Full**, correctly attributed | Measurement matters, or billing depends on it |
+
+The direct link remains the method to **build on**: it worked on every platform tested, and it
+keeps hosting, expiry and billing under DeepVue's control. Inline display is a bonus where the
+portal's own pipeline offers it.
 
 ### 2. Referrer-based attribution does not work. We had to replace it.
 
