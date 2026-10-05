@@ -218,9 +218,6 @@ td.clip { max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow
 .v-nav:hover { text-decoration: none; }
 .v-prev { left: 12px; } .v-next { right: 12px; }
 .v-powered { font-size: 11px; color: rgba(255,255,255,.65); }
-.v-out { pointer-events: auto; display: inline-flex; align-items: center; gap: 4px; text-decoration: none; }
-.v-out:hover { color: #fff; text-decoration: none; }
-.v-out:hover b { text-decoration: underline; }
 .v-powered b { color: #fff; }
 @media (hover: none) { .v-nav { display: none; } }
 
