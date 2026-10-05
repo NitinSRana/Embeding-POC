@@ -93,6 +93,10 @@ The same signed link behaves correctly in both situations:
 - **Inside a listing** (iframe) — just the tour, since the listing supplies the context.
 - **Clicked directly** — a full property page: photos, address, price, beds/baths/size, the
   write-up and amenities, DeepVue-branded.
+- **From inside a listing** — the embed's "Virtual tour by DeepVue" label opens that same full
+  page in a new tab, carrying its `?s=` tag so the visit stays attributed to the portal. The
+  photo itself stays a pure swipe surface. Hosts that sandbox the frame can refuse to honour
+  the link — WordPress does — so it is a bonus where allowed, never the only way through.
 
 And in both, when the subscription lapses, the same URL switches itself to a renewal panel
 without anyone touching the host page. That is the commercial model, working.
