@@ -36,6 +36,15 @@ export default function Gallery({ token, title, photos, track, source, inline = 
     if (document.fullscreenElement) document.exitFullscreen()
     else root.current?.requestFullscreen?.().catch(() => {})
   }
+  // Opening this top-level gets Sec-Fetch-Dest: document, so /t/TOKEN serves the full property
+  // page rather than this gallery. The ?s= tag rides along so the visit stays attributed to the
+  // portal the embed was posted on.
+  //
+  // Hosts that sandbox us can refuse to honour it: WordPress embeds an untrusted oEmbed provider
+  // as sandbox="allow-scripts", which permits neither _blank nor _top, so the link is simply
+  // inert there (verified). It works on every embed the host doesn't sandbox.
+  const full = `/t/${token}${source ? `?s=${encodeURIComponent(source)}` : ''}`
+
   const nudge = (dir: 1 | -1) => {
     const el = strip.current
     if (el) el.scrollBy({ left: dir * el.clientWidth, behavior: 'smooth' })
@@ -72,7 +81,10 @@ export default function Gallery({ token, title, photos, track, source, inline = 
             <div className="v-bottom">
               <div className="v-title">{title}</div>
               <div className="v-meta">
-                <span className="v-powered">Virtual tour by <b>DeepVue</b></span>
+                <a className="v-powered v-out" href={full} target="_blank" rel="noopener" title="Open the full property page" onClick={onInteract}>
+                  Virtual tour by <b>DeepVue</b>
+                  <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M7 17 17 7M9 7h8v8" /></svg>
+                </a>
                 {photos.length > 1 && photos.length <= 12 && (
                   <span className="v-dots" aria-hidden="true">
                     {photos.map((p, j) => <i key={p} className={j === i ? 'on' : ''} />)}
