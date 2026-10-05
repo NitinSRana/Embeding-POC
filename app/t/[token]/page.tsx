@@ -55,7 +55,7 @@ const Brand = () => <div className="brand">Virtual tour by <b>DeepVue</b></div>
 
 export default async function Viewer({ params, searchParams }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ preview?: string; s?: string; e?: string; full?: string }>
+  searchParams: Promise<{ preview?: string; s?: string; e?: string }>
 }) {
   const { token } = await params
   const sp = await searchParams
@@ -83,10 +83,7 @@ export default async function Viewer({ params, searchParams }: {
   // How this was opened decides the layout. Browsers send Sec-Fetch-Dest: iframe for a framed
   // load and 'document' for a top-level navigation. Our own embed codes also carry ?e=1, so
   // framing is still detected on browsers that don't send the header (Safari before 16.4).
-  // ?full=1 overrides the framing check: it's how a sandboxed embed asks for the full property
-  // page in place, since it is not allowed to open one in a new tab. See the script below.
-  const embedded = (sp.e === '1' || ['iframe', 'frame', 'embed', 'object'].includes(h.get('sec-fetch-dest') ?? ''))
-    && sp.full !== '1'
+  const embedded = sp.e === '1' || ['iframe', 'frame', 'embed', 'object'].includes(h.get('sec-fetch-dest') ?? '')
 
   if (new Date(tour.expires_at) <= new Date()) {
     return (
@@ -108,22 +105,7 @@ export default async function Viewer({ params, searchParams }: {
     <>
       {!preview && <Beacon token={token} type="load" refererHeader={refererHeader} source={source} />}
       {embedded
-        ? <>
-            <Gallery token={token} title={tour.title} photos={tour.photos} track={!preview} source={source} />
-            {/* The gallery's "Virtual tour by DeepVue" link opens the full page in a new tab, which
-                a host that sandboxes us is entitled to refuse — WordPress embeds an untrusted
-                oEmbed provider as sandbox="allow-scripts", where _blank and _top are both blocked
-                and the link silently does nothing.
-
-                Such a frame has an opaque origin, so window.origin is the string "null" and we can
-                spot it. Navigating the frame itself is the one kind of navigation no sandbox token
-                is needed for, so there the link is rewritten to do that instead, with ?full=1 so
-                the destination renders the property page rather than this gallery again.
-
-                Plain inline script on purpose: React does not hydrate in these frames, so anything
-                that waits for hydration would never run. This parses with the document. */}
-            <script dangerouslySetInnerHTML={{ __html: "try{if(window.origin==='null'){var a=document.querySelectorAll('a.v-out');for(var i=0;i<a.length;i++){a[i].target='_self';a[i].href+=(a[i].href.indexOf('?')<0?'?':'&')+'full=1'}}}catch(e){}" }} />
-          </>
+        ? <Gallery token={token} title={tour.title} photos={tour.photos} track={!preview} source={source} />
         : <Standalone token={token} tour={tour} track={!preview} source={source} />}
     </>
   )
