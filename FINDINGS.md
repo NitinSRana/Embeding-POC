@@ -95,9 +95,8 @@ The same signed link behaves correctly in both situations:
   write-up and amenities, DeepVue-branded.
 - **From inside a listing** — the embed's "Virtual tour by DeepVue" label opens that same full
   page in a new tab, carrying its `?s=` tag so the visit stays attributed to the portal. The
-  photo itself stays a pure swipe surface. Inside a sandboxed frame — what WordPress gives an
-  untrusted oEmbed provider — opening a new tab is blocked, so there the link loads the full
-  page inside the frame instead, which is the one navigation no sandbox can refuse.
+  photo itself stays a pure swipe surface. Hosts that sandbox the frame can refuse to honour
+  the link — WordPress does — so it is a bonus where allowed, never the only way through.
 
 And in both, when the subscription lapses, the same URL switches itself to a renewal panel
 without anyone touching the host page. That is the commercial model, working.
